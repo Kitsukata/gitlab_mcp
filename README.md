@@ -38,6 +38,7 @@ npm run start
 - `gitlab_create_issue`
 - `gitlab_create_merge_request`
 - `gitlab_edit_merge_request`
+- `gitlab_get_merge_request_diff`
 - `gitlab_create_issue_note`
 - `gitlab_create_merge_request_note`
 - `gitlab_list_pipelines`

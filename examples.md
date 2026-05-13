@@ -55,6 +55,14 @@ Run `npm run generate:examples` after updating tools.
 }
 ```
 
+### `gitlab_get_merge_request_diff`
+```json
+{
+  "projectIdOrPath": "group/project",
+  "mergeRequestIid": 1
+}
+```
+
 ### `gitlab_create_issue_note`
 ```json
 {

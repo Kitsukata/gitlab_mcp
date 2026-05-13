@@ -90,6 +90,12 @@ const editMergeRequestSchema = z.object({
   milestoneId: z.number().int().positive().optional(),
 });
 
+const getMergeRequestDiffSchema = z.object({
+  projectIdOrPath: z.union([z.string().min(1), z.number().int().positive()]),
+  mergeRequestIid: z.number().int().positive(),
+  perPage: z.number().int().min(1).max(100).optional().default(100),
+});
+
 const createIssueNoteSchema = z.object({
   projectIdOrPath: z.union([z.string().min(1), z.number().int().positive()]),
   issueIid: z.number().int().positive(),
@@ -649,6 +655,32 @@ const handlers: Record<string, ToolHandler> = {
       source_branch: mr.source_branch,
       target_branch: mr.target_branch,
       updated_at: mr.updated_at,
+    });
+  },
+
+  async gitlab_get_merge_request_diff(args) {
+    const parsed = getMergeRequestDiffSchema.parse(args ?? {});
+    const changes = await gitlab.MergeRequests.showChanges(parsed.projectIdOrPath, parsed.mergeRequestIid);
+
+    return textResult({
+      iid: changes.iid,
+      title: changes.title,
+      state: changes.state,
+      source_branch: changes.source_branch,
+      target_branch: changes.target_branch,
+      web_url: changes.web_url,
+      changes_count: changes.changes_count,
+      overflow: changes.overflow,
+      changed_files: changes.changes?.slice(0, parsed.perPage).map((change) => ({
+        old_path: change.old_path,
+        new_path: change.new_path,
+        a_mode: change.a_mode,
+        b_mode: change.b_mode,
+        new_file: change.new_file,
+        renamed_file: change.renamed_file,
+        deleted_file: change.deleted_file,
+        diff: change.diff,
+      })),
     });
   },
 
@@ -1789,6 +1821,30 @@ const TOOL_DEFINITIONS = [
             allowCollaboration: { type: "boolean" },
             allowMaintainerToPush: { type: "boolean" },
             milestoneId: { type: "number" },
+          },
+          required: ["projectIdOrPath", "mergeRequestIid"],
+          additionalProperties: false,
+        },
+      },
+      {
+        name: "gitlab_get_merge_request_diff",
+        description: "Get changed files and patch diff for a merge request.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            projectIdOrPath: {
+              oneOf: [{ type: "string" }, { type: "number" }],
+              description: "Project numeric id or path like group/project.",
+            },
+            mergeRequestIid: {
+              type: "number",
+              description: "Merge request IID (internal id in project).",
+            },
+            perPage: {
+              type: "number",
+              description: "Max number of changed files to return (1-100).",
+              default: 100,
+            },
           },
           required: ["projectIdOrPath", "mergeRequestIid"],
           additionalProperties: false,
